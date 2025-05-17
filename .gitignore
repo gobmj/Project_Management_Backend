@@ -33,5 +33,5 @@ build/
 .vscode/
 
 ### CRED ###
-application.properties
+src/main/resources/application.properties
 
