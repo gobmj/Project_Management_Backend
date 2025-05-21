@@ -16,8 +16,14 @@ public class UserService {
     }
 
     public Optional<User> login(String email, String password) {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getEmail().equals(email) && u.getPassword().equals(password))
-                .findFirst();
+        User user = userRepository.findByEmail(email);
+        if (user != null && user.getPassword().equals(password)) {
+            return Optional.of(user);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 }
