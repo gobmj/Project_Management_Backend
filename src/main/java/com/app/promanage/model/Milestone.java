@@ -3,20 +3,18 @@ package com.app.promanage.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 @Data
-public class Project {
+public class Milestone {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private String description;
-    private String createdBy;
     private LocalDate createdOn;
+    private String createdBy;
     private LocalDate startDate;
     private LocalDate endDate;
 
-    @ManyToMany
-    private List<User> assignees;
+    @ManyToOne
+    private Project project;
 }
