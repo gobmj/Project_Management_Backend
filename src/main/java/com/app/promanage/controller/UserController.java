@@ -2,33 +2,27 @@ package com.app.promanage.controller;
 
 import com.app.promanage.model.User;
 import com.app.promanage.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.*;
+
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        return ResponseEntity.ok(userService.register(user));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
-        return userService.login(email, password)
-                .map(user -> ResponseEntity.ok("Login Successful. Role: " + user.getRole()))
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Credentials"));
+    @GetMapping
+    public ResponseEntity<List<User>> getAll() {
+        return ResponseEntity.ok(userService.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
-                .<ResponseEntity<Object>>map(user -> ResponseEntity.ok(user))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found"));
+    public ResponseEntity<User> getById(@PathVariable UUID id) {
+        return userService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

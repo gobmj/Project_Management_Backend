@@ -1,24 +1,22 @@
 package com.app.promanage.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import java.time.LocalDate;
+import lombok.*;
+import java.util.*;
 
 @Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Task {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String name;
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    private String title;
     private String description;
-    private String assignee;
-    private String reporter;
-    private String comments;
     private String status;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private LocalDate createdOn;
-    private String createdBy;
 
     @ManyToOne
     private Project project;
@@ -27,5 +25,8 @@ public class Task {
     private Milestone milestone;
 
     @ManyToOne
-    private Task parent;
+    private User reporter;
+
+    @ManyToMany
+    private List<User> assignees;
 }

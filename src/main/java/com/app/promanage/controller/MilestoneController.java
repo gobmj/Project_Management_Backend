@@ -1,27 +1,38 @@
 package com.app.promanage.controller;
 
 import com.app.promanage.model.Milestone;
-import com.app.promanage.repository.MilestoneRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.app.promanage.service.MilestoneService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 
 @RestController
-@RequestMapping("/milestones")
+@RequestMapping("/api/milestones")
+@RequiredArgsConstructor
 public class MilestoneController {
-    @Autowired private MilestoneRepository milestoneRepository;
+    private final MilestoneService milestoneService;
 
     @PostMapping
     public ResponseEntity<Milestone> create(@RequestBody Milestone milestone) {
-        milestone.setCreatedOn(LocalDate.now());
-        return ResponseEntity.ok(milestoneRepository.save(milestone));
+        return ResponseEntity.ok(milestoneService.save(milestone));
     }
 
     @GetMapping
-    public List<Milestone> getAll() {
-        return milestoneRepository.findAll();
+    public ResponseEntity<List<Milestone>> getAll() {
+        return ResponseEntity.ok(milestoneService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Milestone> getById(@PathVariable UUID id) {
+        return milestoneService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<Milestone>> getByProjectId(@PathVariable UUID projectId) {
+        return ResponseEntity.ok(milestoneService.getByProjectId(projectId));
     }
 }

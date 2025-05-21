@@ -1,27 +1,38 @@
 package com.app.promanage.controller;
 
 import com.app.promanage.model.Task;
-import com.app.promanage.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.app.promanage.service.TaskService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 
 @RestController
-@RequestMapping("/tasks")
+@RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController {
-    @Autowired private TaskRepository taskRepository;
+    private final TaskService taskService;
 
     @PostMapping
     public ResponseEntity<Task> create(@RequestBody Task task) {
-        task.setCreatedOn(LocalDate.now());
-        return ResponseEntity.ok(taskRepository.save(task));
+        return ResponseEntity.ok(taskService.save(task));
     }
 
     @GetMapping
-    public List<Task> getAll() {
-        return taskRepository.findAll();
+    public ResponseEntity<List<Task>> getAll() {
+        return ResponseEntity.ok(taskService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Task> getById(@PathVariable UUID id) {
+        return taskService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<Task>> getByProjectId(@PathVariable UUID projectId) {
+        return ResponseEntity.ok(taskService.getByProjectId(projectId));
     }
 }
