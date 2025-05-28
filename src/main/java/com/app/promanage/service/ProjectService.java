@@ -27,12 +27,10 @@ public class ProjectService {
             if (userOpt.isPresent()) {
                 User currentUser = userOpt.get();
 
-                if (currentUser.getRole() == Role.MANAGER || currentUser.getRole() == Role.ADMIN) {
-                    // Set creator and creation date
+                if (currentUser.getRole().isAtLeast(Role.MANAGER)) {
                     project.setCreatedBy(currentUser);
                     project.setCreatedOn(new Date());
 
-                    // Resolve assignees from passed User IDs
                     if (project.getAssignees() != null && !project.getAssignees().isEmpty()) {
                         List<User> resolvedAssignees = new ArrayList<>();
                         for (User u : project.getAssignees()) {
@@ -56,5 +54,53 @@ public class ProjectService {
 
     public Optional<Project> getById(UUID id) {
         return projectRepository.findById(id);
+    }
+
+    public List<Project> getProjectsOfCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String userEmail = authentication.getName();
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isPresent()) {
+                User currentUser = userOpt.get();
+                UUID userId = currentUser.getId();
+
+                return projectRepository.findAll().stream()
+                        .filter(project ->
+                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
+                                        (project.getAssignees() != null &&
+                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
+                        )
+                        .toList();
+            }
+        }
+        throw new SecurityException("Unauthorized access.");
+    }
+
+    public void deleteProject(UUID projectId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String userEmail = authentication.getName();
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+
+            if (userOpt.isPresent() && projectOpt.isPresent()) {
+                User currentUser = userOpt.get();
+                Project project = projectOpt.get();
+
+                boolean isCreator = project.getCreatedBy() != null &&
+                        project.getCreatedBy().getId().equals(currentUser.getId());
+                boolean isPrivileged = currentUser.getRole().isAtLeast(Role.MANAGER);
+
+                if (isCreator && isPrivileged) {
+                    projectRepository.deleteById(projectId);
+                } else {
+                    throw new SecurityException("Only the project creator with MANAGER or ADMIN role can delete this project.");
+                }
+            } else {
+                throw new NoSuchElementException("Project or user not found.");
+            }
+        }
+        throw new SecurityException("Unauthorized access.");
     }
 }

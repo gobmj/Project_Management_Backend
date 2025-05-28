@@ -51,7 +51,7 @@ public class MilestoneService {
                     throw new SecurityException("You are not the creator of the project.");
                 }
 
-                if (user.getRole() != Role.MANAGER && user.getRole() != Role.ADMIN) {
+                if (!user.getRole().isAtLeast(Role.MANAGER)) {
                     throw new SecurityException("Only MANAGER or ADMIN of the project can create a milestone.");
                 }
 

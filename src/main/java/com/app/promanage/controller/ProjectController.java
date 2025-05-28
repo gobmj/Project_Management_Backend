@@ -12,22 +12,39 @@ import java.util.*;
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
 public class ProjectController {
+
     private final ProjectService projectService;
 
+    // Create project
     @PostMapping
     public ResponseEntity<Project> create(@RequestBody Project project) {
         return ResponseEntity.ok(projectService.save(project));
     }
 
+    // Get all projects (admin-level access)
     @GetMapping
     public ResponseEntity<List<Project>> getAll() {
         return ResponseEntity.ok(projectService.getAll());
     }
 
+    // Get project by ID
     @GetMapping("/{id}")
     public ResponseEntity<Project> getById(@PathVariable UUID id) {
         return projectService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Get all projects of the currently logged-in user
+    @GetMapping("/my-projects")
+    public ResponseEntity<List<Project>> getMyProjects() {
+        return ResponseEntity.ok(projectService.getProjectsOfCurrentUser());
+    }
+
+    // Delete a project by ID (only creator who is ADMIN or MANAGER)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteProject(@PathVariable UUID id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.ok("Project deleted successfully.");
     }
 }
