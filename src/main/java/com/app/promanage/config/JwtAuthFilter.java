@@ -5,6 +5,9 @@ import com.app.promanage.service.UserService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,7 +25,6 @@ public class JwtAuthFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         String path = req.getRequestURI();
 
-        // Skip JWT check for login and register endpoints
         if (path.startsWith("/api/auth/")) {
             chain.doFilter(request, response);
             return;
@@ -34,14 +36,20 @@ public class JwtAuthFilter implements Filter {
             String token = authHeader.substring(7);
             String email = jwtService.extractUsername(token);
 
-            if (jwtService.validateToken(token, email)) {
-                // Optionally, you can load UserDetails and set authentication here if needed
-                request.setAttribute("userEmail", email);
-            } else {
-                // Token invalid - you may want to reject here (optional)
+            if (email != null && jwtService.validateToken(token, email)) {
+                // Load user details (including roles/authorities)
+                UserDetails userDetails = userService.loadUserByUsername(email);
+
+                // Create Authentication token
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities());
+
+                // Set Authentication into Security Context
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } else {
-            // No auth header - you may want to reject here or allow to pass and be caught by Spring Security later
         }
 
         chain.doFilter(request, response);

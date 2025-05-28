@@ -2,6 +2,7 @@ package com.app.promanage.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.util.*;
 
 @Entity
@@ -16,7 +17,23 @@ public class Task {
 
     private String title;
     private String description;
+
     private String status;
+
+    @ElementCollection
+    private List<String> comments;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date startDate;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date endDate;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdOn;
+
+    @ManyToOne
+    private User createdBy;
 
     @ManyToOne
     private Project project;
@@ -29,4 +46,7 @@ public class Task {
 
     @ManyToMany
     private List<User> assignees;
+
+    @ManyToOne
+    private Task parentTask;
 }

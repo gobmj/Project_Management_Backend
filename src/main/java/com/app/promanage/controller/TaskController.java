@@ -12,10 +12,11 @@ import java.util.*;
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
 public class TaskController {
+
     private final TaskService taskService;
 
     @PostMapping
-    public ResponseEntity<Task> create(@RequestBody Task task) {
+    public ResponseEntity<Task> createTask(@RequestBody Task task) {
         return ResponseEntity.ok(taskService.save(task));
     }
 

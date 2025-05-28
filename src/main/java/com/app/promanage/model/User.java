@@ -2,6 +2,9 @@ package com.app.promanage.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
