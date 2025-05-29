@@ -19,6 +19,17 @@ public class MilestoneController {
         return ResponseEntity.ok(milestoneService.save(milestone));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Milestone> update(@PathVariable UUID id, @RequestBody Milestone updatedMilestone) {
+        return ResponseEntity.ok(milestoneService.update(id, updatedMilestone));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        milestoneService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<Milestone>> getAll() {
         return ResponseEntity.ok(milestoneService.getAll());

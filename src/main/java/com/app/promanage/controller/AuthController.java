@@ -1,7 +1,7 @@
 package com.app.promanage.controller;
 
-import com.app.promanage.service.JwtService;
 import com.app.promanage.model.User;
+import com.app.promanage.service.JwtService;
 import com.app.promanage.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +13,7 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
     private final UserService userService;
     private final JwtService jwtService;
 
@@ -24,7 +25,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> login) {
         return userService.authenticate(login.get("email"), login.get("password"))
-                .map(user -> ResponseEntity.ok(Map.of("token", jwtService.generateToken(user.getEmail()))))
+                .map(user -> ResponseEntity.ok(
+                        Map.of(
+                                "token", jwtService.generateToken(user.getEmail()),
+                                "user", Map.of(
+                                        "name", user.getName(),
+                                        "email", user.getEmail(),
+                                        "role", user.getRole().getLevel()
+                                )
+                        )
+                ))
                 .orElse(ResponseEntity.status(401).body(Map.of("error", "Invalid credentials")));
     }
 }
