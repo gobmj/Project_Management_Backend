@@ -47,4 +47,11 @@ public class TaskController {
         taskService.delete(id);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/milestone/{milestoneId}")
+    public ResponseEntity<List<Task>> getTasksByMilestoneId(@PathVariable UUID milestoneId) {
+        List<Task> tasks = taskService.getTasksByMilestoneId(milestoneId);
+        return ResponseEntity.ok(tasks);
+    }
+
 }

@@ -136,6 +136,10 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
+    public List<Task> getTasksByMilestoneId(UUID milestoneId) {
+        return taskRepository.findByMilestoneId(milestoneId);
+    }
+
     public List<Task> getAll() {
         return taskRepository.findAll();
     }

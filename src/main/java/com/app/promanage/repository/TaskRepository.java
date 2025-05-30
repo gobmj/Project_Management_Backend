@@ -6,4 +6,5 @@ import java.util.*;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByProjectId(UUID projectId);
+    List<Task> findByMilestoneId(UUID milestoneId);
 }
