@@ -35,7 +35,6 @@ public class ProjectController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Get all projects of the currently logged-in user WITH TASK COUNTS
     @GetMapping("/my-projects")
     public ResponseEntity<List<Project>> getMyProjects() {
         return ResponseEntity.ok(projectService.getProjectsOfCurrentUser());
