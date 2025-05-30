@@ -18,7 +18,9 @@ public class Task {
 
     private String title;
     private String description;
-    private String status;
+
+    @Enumerated(EnumType.STRING) // or use ORDINAL if you prefer numeric value in DB
+    private TaskStatus status;
 
     @ElementCollection
     private List<String> comments = new ArrayList<>();
@@ -30,9 +32,9 @@ public class Task {
     private Date endDate;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Date dueDate;        // ✅ ADD THIS FIELD
+    private Date dueDate;
 
-    private String priority;     // ✅ ADD THIS FIELD
+    private String priority;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdOn;

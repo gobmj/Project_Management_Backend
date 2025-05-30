@@ -39,12 +39,12 @@ public class TaskController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable UUID id, @RequestBody Task task) {
-        return ResponseEntity.ok(taskService.updateTask(id, task));
+        return ResponseEntity.ok(taskService.update(id, task));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTask(@PathVariable UUID id) {
-        taskService.deleteTask(id);
+        taskService.delete(id);
         return ResponseEntity.ok().build();
     }
 }

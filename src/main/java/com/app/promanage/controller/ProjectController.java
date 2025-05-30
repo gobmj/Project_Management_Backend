@@ -1,5 +1,6 @@
 package com.app.promanage.controller;
 
+import com.app.promanage.dto.ProjectWithTaskStatsDTO;
 import com.app.promanage.model.Project;
 import com.app.promanage.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +36,11 @@ public class ProjectController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Get all projects of the currently logged-in user
+    // Get all projects of the currently logged-in user WITH TASK COUNTS
     @GetMapping("/my-projects")
-    public ResponseEntity<List<Project>> getMyProjects() {
-        return ResponseEntity.ok(projectService.getProjectsOfCurrentUser());
+    public ResponseEntity<List<ProjectWithTaskStatsDTO>> getMyProjects() {
+        List<ProjectWithTaskStatsDTO> projectsWithStats = projectService.getProjectsOfCurrentUserWithTaskStats();
+        return ResponseEntity.ok(projectsWithStats);
     }
 
     // Delete a project by ID (only creator who is ADMIN or MANAGER)
