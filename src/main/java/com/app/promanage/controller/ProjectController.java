@@ -1,6 +1,5 @@
 package com.app.promanage.controller;
 
-import com.app.promanage.dto.ProjectWithTaskStatsDTO;
 import com.app.promanage.model.Project;
 import com.app.promanage.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +37,8 @@ public class ProjectController {
 
     // Get all projects of the currently logged-in user WITH TASK COUNTS
     @GetMapping("/my-projects")
-    public ResponseEntity<List<ProjectWithTaskStatsDTO>> getMyProjects() {
-        List<ProjectWithTaskStatsDTO> projectsWithStats = projectService.getProjectsOfCurrentUserWithTaskStats();
-        return ResponseEntity.ok(projectsWithStats);
+    public ResponseEntity<List<Project>> getMyProjects() {
+        return ResponseEntity.ok(projectService.getProjectsOfCurrentUser());
     }
 
     // Delete a project by ID (only creator who is ADMIN or MANAGER)
@@ -49,4 +47,34 @@ public class ProjectController {
         projectService.deleteProject(id);
         return ResponseEntity.ok("Project deleted successfully.");
     }
+
+    // Update project by ID
+    @PutMapping("/{id}")
+    public ResponseEntity<Project> updateProject(@PathVariable UUID id, @RequestBody Project updatedProject) {
+        try {
+            Project project = projectService.updateProject(id, updatedProject);
+            return ResponseEntity.ok(project);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).build();
+        }
+    }
+
+    @PatchMapping("/{projectId}/add-assignee")
+    public ResponseEntity<String> addAssigneeToProject(
+            @PathVariable UUID projectId,
+            @RequestParam String email) {
+        try {
+            projectService.addAssigneeByEmail(projectId, email);
+            return ResponseEntity.ok("User added as assignee successfully.");
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
 }

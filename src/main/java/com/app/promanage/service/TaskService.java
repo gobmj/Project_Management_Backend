@@ -1,6 +1,5 @@
 package com.app.promanage.service;
 
-import com.app.promanage.dto.ProjectWithTaskStatsDTO;
 import com.app.promanage.model.Project;
 import com.app.promanage.model.Task;
 import com.app.promanage.model.User;
@@ -117,40 +116,6 @@ public class TaskService {
         }
 
         return taskRepository.save(existingTask);
-    }
-
-    public List<ProjectWithTaskStatsDTO> getProjectsOfCurrentUserWithTaskStats() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            String userEmail = authentication.getName();
-            Optional<User> userOpt = userRepository.findByEmail(userEmail);
-            if (userOpt.isPresent()) {
-                User currentUser = userOpt.get();
-                UUID userId = currentUser.getId();
-
-                List<Project> userProjects = projectRepository.findAll().stream()
-                        .filter(project ->
-                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
-                                        (project.getAssignees() != null &&
-                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
-                        )
-                        .toList();
-
-                List<ProjectWithTaskStatsDTO> result = new ArrayList<>();
-
-                for (Project project : userProjects) {
-                    UUID projectId = project.getId();
-
-                    long totalTasks = taskRepository.countByProjectId(projectId);
-                    long doneTasks = taskRepository.countByProjectIdAndStatus(projectId, 3); // Assuming status 3 = DONE
-
-                    result.add(new ProjectWithTaskStatsDTO(project, totalTasks, doneTasks));
-                }
-
-                return result;
-            }
-        }
-        throw new SecurityException("Unauthorized access.");
     }
 
     public void delete(UUID id) {

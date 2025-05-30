@@ -25,6 +25,8 @@ public class Project {
     @Temporal(TemporalType.DATE)
     private Date endDate;
 
+    private String priority;
+
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdOn;
 

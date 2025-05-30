@@ -103,4 +103,91 @@ public class ProjectService {
         }
         throw new SecurityException("Unauthorized access.");
     }
+
+    public Project updateProject(UUID projectId, Project updatedProject) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String userEmail = authentication.getName();
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+
+            if (userOpt.isPresent() && projectOpt.isPresent()) {
+                User currentUser = userOpt.get();
+                Project existingProject = projectOpt.get();
+
+                boolean isCreator = existingProject.getCreatedBy() != null &&
+                        existingProject.getCreatedBy().getId().equals(currentUser.getId());
+                boolean isPrivileged = currentUser.getRole().isAtLeast(Role.MANAGER);
+
+                if (isCreator && isPrivileged) {
+                    existingProject.setName(updatedProject.getName());
+                    existingProject.setDescription(updatedProject.getDescription());
+                    existingProject.setStartDate(updatedProject.getStartDate());
+                    existingProject.setEndDate(updatedProject.getEndDate());
+                    existingProject.setPriority(updatedProject.getPriority()); // <-- priority added
+
+                    if (updatedProject.getAssignees() != null) {
+                        List<User> resolvedAssignees = new ArrayList<>();
+                        for (User u : updatedProject.getAssignees()) {
+                            userRepository.findById(u.getId()).ifPresent(resolvedAssignees::add);
+                        }
+                        existingProject.setAssignees(resolvedAssignees);
+                    }
+
+                    return projectRepository.save(existingProject);
+                } else {
+                    throw new SecurityException("Only the project creator with MANAGER or ADMIN role can update this project.");
+                }
+            } else {
+                throw new NoSuchElementException("Project or user not found.");
+            }
+        }
+        throw new SecurityException("Unauthorized access.");
+    }
+
+    public void addAssigneeByEmail(UUID projectId, String userEmailToAssign) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String currentUserEmail = authentication.getName();
+
+            Optional<User> currentUserOpt = userRepository.findByEmail(currentUserEmail);
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+            Optional<User> userToAssignOpt = userRepository.findByEmail(userEmailToAssign);
+
+            if (currentUserOpt.isEmpty() || projectOpt.isEmpty()) {
+                throw new NoSuchElementException("Project or authenticated user not found.");
+            }
+
+            if (userToAssignOpt.isEmpty()) {
+                throw new IllegalArgumentException("User with given email not found.");
+            }
+
+            User currentUser = currentUserOpt.get();
+            Project project = projectOpt.get();
+            User userToAssign = userToAssignOpt.get();
+
+            // Only MANAGER or ADMIN who created the project can add assignees
+            boolean isCreator = project.getCreatedBy() != null &&
+                    project.getCreatedBy().getId().equals(currentUser.getId());
+            boolean isPrivileged = currentUser.getRole().isAtLeast(Role.MANAGER);
+
+            if (!(isCreator && isPrivileged)) {
+                throw new SecurityException("Only the project creator with MANAGER or ADMIN role can assign users.");
+            }
+
+            // Check if already assigned
+            List<User> assignees = project.getAssignees() != null ? project.getAssignees() : new ArrayList<>();
+            boolean alreadyAssigned = assignees.stream().anyMatch(u -> u.getId().equals(userToAssign.getId()));
+
+            if (alreadyAssigned) {
+                throw new IllegalArgumentException("User is already an assignee.");
+            }
+
+            assignees.add(userToAssign);
+            project.setAssignees(assignees);
+            projectRepository.save(project);
+        } else {
+            throw new SecurityException("Unauthorized access.");
+        }
+    }
 }

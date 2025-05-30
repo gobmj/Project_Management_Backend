@@ -19,8 +19,7 @@ public class Task {
     private String title;
     private String description;
 
-    @Enumerated(EnumType.STRING) // or use ORDINAL if you prefer numeric value in DB
-    private TaskStatus status;
+    private String status;
 
     @ElementCollection
     private List<String> comments = new ArrayList<>();
