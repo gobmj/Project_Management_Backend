@@ -49,9 +49,16 @@ public class TaskController {
     }
 
     @GetMapping("/milestone/{milestoneId}")
-    public ResponseEntity<List<Task>> getTasksByMilestoneId(@PathVariable UUID milestoneId) {
+    public ResponseEntity<Map<String, Object>> getTasksByMilestoneId(@PathVariable UUID milestoneId) {
         List<Task> tasks = taskService.getTasksByMilestoneId(milestoneId);
-        return ResponseEntity.ok(tasks);
-    }
+        int total = tasks.size();
+        int completed = (int) tasks.stream().filter(task -> "2".equals(task.getStatus())).count();
 
+        Map<String, Object> response = new HashMap<>();
+        response.put("tasks", tasks);
+        response.put("totalTasks", total);
+        response.put("completedTasks", completed);
+
+        return ResponseEntity.ok(response);
+    }
 }
