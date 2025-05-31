@@ -5,6 +5,8 @@ import com.app.promanage.model.Role;
 import com.app.promanage.model.User;
 import com.app.promanage.repository.ProjectRepository;
 import com.app.promanage.repository.UserRepository;
+import com.app.promanage.service.JwtService;
+import com.app.promanage.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,8 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
+    private final JwtService jwtService;
 
     public Project save(Project project) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -56,26 +60,26 @@ public class ProjectService {
         return projectRepository.findById(id);
     }
 
-    public List<Project> getProjectsOfCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            String userEmail = authentication.getName();
-            Optional<User> userOpt = userRepository.findByEmail(userEmail);
-            if (userOpt.isPresent()) {
-                User currentUser = userOpt.get();
-                UUID userId = currentUser.getId();
-
-                return projectRepository.findAll().stream()
-                        .filter(project ->
-                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
-                                        (project.getAssignees() != null &&
-                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
-                        )
-                        .toList();
-            }
-        }
-        throw new SecurityException("Unauthorized access.");
-    }
+//    public List<Project> getProjectsOfCurrentUser() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication != null && authentication.isAuthenticated()) {
+//            String userEmail = authentication.getName();
+//            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+//            if (userOpt.isPresent()) {
+//                User currentUser = userOpt.get();
+//                UUID userId = currentUser.getId();
+//
+//                return projectRepository.findAll().stream()
+//                        .filter(project ->
+//                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
+//                                        (project.getAssignees() != null &&
+//                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
+//                        )
+//                        .toList();
+//            }
+//        }
+//        throw new SecurityException("Unauthorized access.");
+//    }
 
     public void deleteProject(UUID projectId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -189,5 +193,36 @@ public class ProjectService {
         } else {
             throw new SecurityException("Unauthorized access.");
         }
+    }
+
+    public List<Project> getProjectsOfCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String userEmail = authentication.getName();
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isPresent()) {
+                User currentUser = userOpt.get();
+                UUID userId = currentUser.getId();
+
+                List<Project> projects = projectRepository.findAll().stream()
+                        .filter(project ->
+                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
+                                        (project.getAssignees() != null &&
+                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
+                        )
+                        .toList();
+
+                // Add task counts
+                for (Project project : projects) {
+                    int total = taskRepository.countByProject_Id(project.getId());
+                    int completed = taskRepository.countByProject_IdAndStatus(project.getId(), "2");
+                    project.setTotalTasks(total);
+                    project.setCompletedTasks(completed);
+                }
+
+                return projects;
+            }
+        }
+        throw new SecurityException("Unauthorized access.");
     }
 }

@@ -1,5 +1,6 @@
 package com.app.promanage.controller;
 
+import com.app.promanage.dto.UserSummaryDTO;
 import com.app.promanage.model.User;
 import com.app.promanage.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class UserController {
         return userService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<UserSummaryDTO> getUserSummary(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getUserSummary(id));
     }
 }

@@ -1,6 +1,13 @@
 package com.app.promanage.service;
 
+import com.app.promanage.dto.UserSummaryDTO;
+import com.app.promanage.model.Milestone;
+import com.app.promanage.model.Project;
+import com.app.promanage.model.Task;
 import com.app.promanage.model.User;
+import com.app.promanage.repository.MilestoneRepository;
+import com.app.promanage.repository.ProjectRepository;
+import com.app.promanage.repository.TaskRepository;
 import com.app.promanage.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +18,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
+    private final MilestoneRepository milestoneRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -42,13 +50,39 @@ public class UserService implements UserDetailsService {
         return Optional.empty();
     }
 
-    // Load UserDetails by username (email) for Spring Security
+    // Updated getUserSummary method counting assignee or creator for projects/tasks, and createdBy for milestones
+    public UserSummaryDTO getUserSummary(UUID userId) {
+        // Projects where user is assignee or creator
+        List<Project> projects = projectRepository.findByAssignees_IdOrCreatedBy_Id(userId, userId);
+        int totalProjects = projects.size();
+
+        // Tasks where user is assignee, reporter, or creator
+        List<Task> tasks = taskRepository.findByAssignees_IdOrReporter_IdOrCreatedBy_Id(userId, userId, userId);
+        int totalTasks = tasks.size();
+
+        // Collect project IDs for milestone query
+        List<UUID> projectIds = projects.stream().map(Project::getId).toList();
+
+        // Milestones related to those projects
+        List<Milestone> milestonesInProjects = projectIds.isEmpty() ? List.of() : milestoneRepository.findByProject_IdIn(projectIds);
+
+        // Milestones created by user directly
+        List<Milestone> milestonesCreatedByUser = milestoneRepository.findByCreatedBy_Id(userId);
+
+        // Combine milestones into a set to avoid duplicates
+        Set<UUID> milestoneIds = new HashSet<>();
+        milestonesInProjects.forEach(m -> milestoneIds.add(m.getId()));
+        milestonesCreatedByUser.forEach(m -> milestoneIds.add(m.getId()));
+        int totalMilestones = milestoneIds.size();
+
+        return new UserSummaryDTO(totalProjects, totalTasks, totalMilestones);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // Convert single role enum to SimpleGrantedAuthority
         SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
 
         return new org.springframework.security.core.userdetails.User(
