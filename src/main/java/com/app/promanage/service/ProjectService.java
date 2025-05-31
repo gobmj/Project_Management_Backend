@@ -5,7 +5,6 @@ import com.app.promanage.model.Role;
 import com.app.promanage.model.User;
 import com.app.promanage.repository.ProjectRepository;
 import com.app.promanage.repository.UserRepository;
-import com.app.promanage.service.JwtService;
 import com.app.promanage.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,6 +21,7 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final JwtService jwtService;
+    private final EmailService emailService; // <-- Injected EmailService
 
     public Project save(Project project) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -43,7 +43,21 @@ public class ProjectService {
                         project.setAssignees(resolvedAssignees);
                     }
 
-                    return projectRepository.save(project);
+                    Project savedProject = projectRepository.save(project);
+
+                    // Send email notification to assignees
+                    for (User assignee : savedProject.getAssignees()) {
+                        emailService.sendEmail(
+                                assignee.getEmail(),
+                                "You have been assigned to a new project",
+                                "Hello " + assignee.getName() + ",\n\n" +
+                                        "You have been assigned to the project: " + savedProject.getName() + ".\n\n" +
+                                        "Description: " + savedProject.getDescription() + "\n\n" +
+                                        "Regards,\nPromanage Team"
+                        );
+                    }
+
+                    return savedProject;
                 } else {
                     throw new SecurityException("Only MANAGER or ADMIN can create projects.");
                 }
@@ -59,27 +73,6 @@ public class ProjectService {
     public Optional<Project> getById(UUID id) {
         return projectRepository.findById(id);
     }
-
-//    public List<Project> getProjectsOfCurrentUser() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        if (authentication != null && authentication.isAuthenticated()) {
-//            String userEmail = authentication.getName();
-//            Optional<User> userOpt = userRepository.findByEmail(userEmail);
-//            if (userOpt.isPresent()) {
-//                User currentUser = userOpt.get();
-//                UUID userId = currentUser.getId();
-//
-//                return projectRepository.findAll().stream()
-//                        .filter(project ->
-//                                (project.getCreatedBy() != null && userId.equals(project.getCreatedBy().getId())) ||
-//                                        (project.getAssignees() != null &&
-//                                                project.getAssignees().stream().anyMatch(assignee -> userId.equals(assignee.getId())))
-//                        )
-//                        .toList();
-//            }
-//        }
-//        throw new SecurityException("Unauthorized access.");
-//    }
 
     public void deleteProject(UUID projectId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -128,7 +121,7 @@ public class ProjectService {
                     existingProject.setDescription(updatedProject.getDescription());
                     existingProject.setStartDate(updatedProject.getStartDate());
                     existingProject.setEndDate(updatedProject.getEndDate());
-                    existingProject.setPriority(updatedProject.getPriority()); // <-- priority added
+                    existingProject.setPriority(updatedProject.getPriority());
 
                     if (updatedProject.getAssignees() != null) {
                         List<User> resolvedAssignees = new ArrayList<>();
@@ -138,7 +131,20 @@ public class ProjectService {
                         existingProject.setAssignees(resolvedAssignees);
                     }
 
-                    return projectRepository.save(existingProject);
+                    Project savedProject = projectRepository.save(existingProject);
+
+                    // Notify all assignees
+                    for (User assignee : savedProject.getAssignees()) {
+                        emailService.sendEmail(
+                                assignee.getEmail(),
+                                "Project Updated: " + savedProject.getName(),
+                                "Dear " + assignee.getName() + ",\n\n" +
+                                        "The project \"" + savedProject.getName() + "\" has been updated.\n\n" +
+                                        "Please review the changes.\n\nPromanage Team"
+                        );
+                    }
+
+                    return savedProject;
                 } else {
                     throw new SecurityException("Only the project creator with MANAGER or ADMIN role can update this project.");
                 }
@@ -170,7 +176,6 @@ public class ProjectService {
             Project project = projectOpt.get();
             User userToAssign = userToAssignOpt.get();
 
-            // Only MANAGER or ADMIN who created the project can add assignees
             boolean isCreator = project.getCreatedBy() != null &&
                     project.getCreatedBy().getId().equals(currentUser.getId());
             boolean isPrivileged = currentUser.getRole().isAtLeast(Role.MANAGER);
@@ -179,7 +184,6 @@ public class ProjectService {
                 throw new SecurityException("Only the project creator with MANAGER or ADMIN role can assign users.");
             }
 
-            // Check if already assigned
             List<User> assignees = project.getAssignees() != null ? project.getAssignees() : new ArrayList<>();
             boolean alreadyAssigned = assignees.stream().anyMatch(u -> u.getId().equals(userToAssign.getId()));
 
@@ -190,6 +194,15 @@ public class ProjectService {
             assignees.add(userToAssign);
             project.setAssignees(assignees);
             projectRepository.save(project);
+
+            // Send email to new assignee
+            emailService.sendEmail(
+                    userToAssign.getEmail(),
+                    "You have been added to project: " + project.getName(),
+                    "Hello " + userToAssign.getName() + ",\n\n" +
+                            "You have been added as an assignee to the project \"" + project.getName() + "\".\n\n" +
+                            "Regards,\nPromanage Team"
+            );
         } else {
             throw new SecurityException("Unauthorized access.");
         }
@@ -212,7 +225,6 @@ public class ProjectService {
                         )
                         .toList();
 
-                // Add task counts
                 for (Project project : projects) {
                     int total = taskRepository.countByProject_Id(project.getId());
                     int completed = taskRepository.countByProject_IdAndStatus(project.getId(), "2");
