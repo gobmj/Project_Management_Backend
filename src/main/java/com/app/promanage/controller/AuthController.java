@@ -26,6 +26,7 @@ public class AuthController {
                 Map.of(
                         "token", token,
                         "user", Map.of(
+                                "id", savedUser.getId(),
                                 "name", savedUser.getName(),
                                 "email", savedUser.getEmail(),
                                 "role", savedUser.getRole().getLevel()
@@ -41,6 +42,7 @@ public class AuthController {
                         Map.of(
                                 "token", jwtService.generateToken(user.getEmail()),
                                 "user", Map.of(
+                                        "id", user.getId(),
                                         "name", user.getName(),
                                         "email", user.getEmail(),
                                         "role", user.getRole().getLevel()
