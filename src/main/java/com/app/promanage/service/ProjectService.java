@@ -227,7 +227,7 @@ public class ProjectService {
 
                 for (Project project : projects) {
                     int total = taskRepository.countByProject_Id(project.getId());
-                    int completed = taskRepository.countByProject_IdAndStatus(project.getId(), "2");
+                    int completed = taskRepository.countByProject_IdAndStatus(project.getId(), "3");
                     project.setTotalTasks(total);
                     project.setCompletedTasks(completed);
                 }

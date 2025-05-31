@@ -80,9 +80,9 @@ public class ReportService {
 
     private String translateStatus(String statusCode) {
         return switch (statusCode) {
-            case "0" -> "Open";
-            case "1" -> "In Progress";
-            case "2" -> "Completed";
+            case "1" -> "Open";
+            case "2" -> "In Progress";
+            case "3" -> "Completed";
             default -> "Unknown";
         };
     }

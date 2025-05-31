@@ -52,7 +52,7 @@ public class TaskController {
     public ResponseEntity<Map<String, Object>> getTasksByMilestoneId(@PathVariable UUID milestoneId) {
         List<Task> tasks = taskService.getTasksByMilestoneId(milestoneId);
         int total = tasks.size();
-        int completed = (int) tasks.stream().filter(task -> "2".equals(task.getStatus())).count();
+        int completed = (int) tasks.stream().filter(task -> "3".equals(task.getStatus())).count();
 
         Map<String, Object> response = new HashMap<>();
         response.put("tasks", tasks);
