@@ -21,7 +21,7 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final JwtService jwtService;
-    private final EmailService emailService; // <-- Injected EmailService
+    private final EmailService emailService;
 
     public Project save(Project project) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

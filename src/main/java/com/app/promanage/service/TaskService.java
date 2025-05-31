@@ -20,6 +20,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final EmailService emailService;
 
     public Task save(Task task) {
         User creator = getAuthenticatedUser();
@@ -134,6 +135,48 @@ public class TaskService {
         }
 
         taskRepository.deleteById(id);
+    }
+
+    public Task addAssigneeToTask(UUID taskId, String assigneeEmail) {
+        User currentUser = getAuthenticatedUser();
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NoSuchElementException("Task not found with ID: " + taskId));
+        Project project = task.getProject();
+
+        boolean isUserAssignedToProject = project.getAssignees() != null &&
+                project.getAssignees().stream().anyMatch(u -> u.getId().equals(currentUser.getId()));
+        boolean isCreator = project.getCreatedBy() != null &&
+                project.getCreatedBy().getId().equals(currentUser.getId());
+
+        if (!isUserAssignedToProject && !isCreator) {
+            throw new SecurityException("Only project assignees or the creator can add task assignees.");
+        }
+
+        User newAssignee = userRepository.findByEmail(assigneeEmail)
+                .orElseThrow(() -> new NoSuchElementException("User not found with email: " + assigneeEmail));
+
+        List<User> assignees = task.getAssignees() != null ? new ArrayList<>(task.getAssignees()) : new ArrayList<>();
+
+        boolean alreadyAssigned = assignees.stream().anyMatch(u -> u.getId().equals(newAssignee.getId()));
+        if (alreadyAssigned) {
+            throw new IllegalArgumentException("User is already an assignee.");
+        }
+
+        assignees.add(newAssignee);
+        task.setAssignees(assignees);
+        Task savedTask = taskRepository.save(task);
+
+        // Send email notification
+        emailService.sendEmail(
+                newAssignee.getEmail(),
+                "You have been assigned to a task: " + task.getTitle(),
+                "Hello " + newAssignee.getName() + ",\n\n" +
+                        "You have been assigned as an assignee to the task \"" + task.getTitle() + "\" in project \"" + project.getName() + "\".\n\n" +
+                        "Please check the task details.\n\nRegards,\nPromanage Team"
+        );
+
+        return savedTask;
     }
 
     public List<Task> getTasksByMilestoneId(UUID milestoneId) {

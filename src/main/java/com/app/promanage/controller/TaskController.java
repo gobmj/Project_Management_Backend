@@ -61,4 +61,22 @@ public class TaskController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/{taskId}/add-assignee")
+    public ResponseEntity<String> addAssigneeToTask(
+            @PathVariable UUID taskId,
+            @RequestParam String email) {
+        try {
+            taskService.addAssigneeToTask(taskId, email);
+            return ResponseEntity.ok("User added as assignee to task successfully.");
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("An unexpected error occurred.");
+        }
+    }
 }
