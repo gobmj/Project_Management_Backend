@@ -32,13 +32,11 @@ public class UserService implements UserDetailsService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Register user with encoded password
     public User register(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
-    // Authenticate user by email and password
     public Optional<User> authenticate(String email, String password) {
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isPresent()) {
@@ -50,7 +48,6 @@ public class UserService implements UserDetailsService {
         return Optional.empty();
     }
 
-    // Updated getUserSummary method counting assignee or creator for projects/tasks, and createdBy for milestones
     public UserSummaryDTO getUserSummary(UUID userId) {
         // Projects where user is assignee or creator
         List<Project> projects = projectRepository.findByAssignees_IdOrCreatedBy_Id(userId, userId);
@@ -59,6 +56,11 @@ public class UserService implements UserDetailsService {
         // Tasks where user is assignee, reporter, or creator
         List<Task> tasks = taskRepository.findByAssignees_IdOrReporter_IdOrCreatedBy_Id(userId, userId, userId);
         int totalTasks = tasks.size();
+
+        // Count completed tasks (status == "2")
+        int completedTasks = (int) tasks.stream()
+                .filter(task -> "2".equals(task.getStatus()))
+                .count();
 
         // Collect project IDs for milestone query
         List<UUID> projectIds = projects.stream().map(Project::getId).toList();
@@ -75,7 +77,7 @@ public class UserService implements UserDetailsService {
         milestonesCreatedByUser.forEach(m -> milestoneIds.add(m.getId()));
         int totalMilestones = milestoneIds.size();
 
-        return new UserSummaryDTO(totalProjects, totalTasks, totalMilestones);
+        return new UserSummaryDTO(totalProjects, totalTasks, completedTasks, totalMilestones);
     }
 
     @Override
