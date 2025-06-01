@@ -93,6 +93,13 @@ public class UserService implements UserDetailsService {
         );
     }
 
+    public User setManager(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+        user.setManager(true);
+        return userRepository.save(user);
+    }
+
     public List<User> getAll() {
         return userRepository.findAll();
     }

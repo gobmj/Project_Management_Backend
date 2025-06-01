@@ -31,4 +31,10 @@ public class UserController {
     public ResponseEntity<UserSummaryDTO> getUserSummary(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserSummary(id));
     }
+
+    @PutMapping("/{id}/set-manager")
+    public ResponseEntity<User> setManager(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.setManager(id));
+    }
+
 }
