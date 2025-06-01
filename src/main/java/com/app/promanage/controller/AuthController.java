@@ -29,7 +29,8 @@ public class AuthController {
                                 "id", savedUser.getId(),
                                 "name", savedUser.getName(),
                                 "email", savedUser.getEmail(),
-                                "role", savedUser.getRole().getLevel()
+                                "role", savedUser.getRole().getLevel(),
+                                "isManager", savedUser.isManager()
                         )
                 )
         );
@@ -45,7 +46,8 @@ public class AuthController {
                                         "id", user.getId(),
                                         "name", user.getName(),
                                         "email", user.getEmail(),
-                                        "role", user.getRole().getLevel()
+                                        "role", user.getRole().getLevel(),
+                                        "isManager", user.isManager()
                                 )
                         )
                 ))
