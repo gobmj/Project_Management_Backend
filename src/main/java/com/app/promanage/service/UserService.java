@@ -57,9 +57,8 @@ public class UserService implements UserDetailsService {
         List<Task> tasks = taskRepository.findByAssignees_IdOrReporter_IdOrCreatedBy_Id(userId, userId, userId);
         int totalTasks = tasks.size();
 
-        // Count completed tasks (status == "2")
         int completedTasks = (int) tasks.stream()
-                .filter(task -> "2".equals(task.getStatus()))
+                .filter(task -> "3".equals(task.getStatus()))
                 .count();
 
         // Collect project IDs for milestone query
