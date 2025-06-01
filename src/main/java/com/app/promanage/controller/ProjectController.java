@@ -76,4 +76,20 @@ public class ProjectController {
         }
     }
 
+    @PatchMapping("/{projectId}/remove-assignee")
+    public ResponseEntity<String> removeAssigneeFromProject(
+            @PathVariable UUID projectId,
+            @RequestParam String email) {
+        try {
+            projectService.removeAssigneeByEmail(projectId, email);
+            return ResponseEntity.ok("User removed from project successfully.");
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
 }

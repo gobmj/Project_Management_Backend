@@ -237,4 +237,56 @@ public class ProjectService {
         }
         throw new SecurityException("Unauthorized access.");
     }
+
+    public void removeAssigneeByEmail(UUID projectId, String userEmailToRemove) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String currentUserEmail = authentication.getName();
+
+            Optional<User> currentUserOpt = userRepository.findByEmail(currentUserEmail);
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+            Optional<User> userToRemoveOpt = userRepository.findByEmail(userEmailToRemove);
+
+            if (currentUserOpt.isEmpty() || projectOpt.isEmpty()) {
+                throw new NoSuchElementException("Project or authenticated user not found.");
+            }
+
+            if (userToRemoveOpt.isEmpty()) {
+                throw new IllegalArgumentException("User with given email not found.");
+            }
+
+            User currentUser = currentUserOpt.get();
+            Project project = projectOpt.get();
+            User userToRemove = userToRemoveOpt.get();
+
+            boolean isCreator = project.getCreatedBy() != null &&
+                    project.getCreatedBy().getId().equals(currentUser.getId());
+            boolean isPrivileged = currentUser.getRole().isAtLeast(Role.MANAGER);
+
+            if (!(isCreator && isPrivileged)) {
+                throw new SecurityException("Only the project creator with MANAGER or ADMIN role can revoke users.");
+            }
+
+            List<User> assignees = project.getAssignees();
+            if (assignees == null || assignees.stream().noneMatch(u -> u.getId().equals(userToRemove.getId()))) {
+                throw new IllegalArgumentException("User is not an assignee of this project.");
+            }
+
+            assignees.removeIf(u -> u.getId().equals(userToRemove.getId()));
+            project.setAssignees(assignees);
+            projectRepository.save(project);
+
+            // Send email to removed user
+            emailService.sendEmail(
+                    userToRemove.getEmail(),
+                    "Removed from Project: " + project.getName(),
+                    "Hello " + userToRemove.getName() + ",\n\n" +
+                            "You have been removed as an assignee from the project \"" + project.getName() + "\".\n\n" +
+                            "Regards,\nPromanage Team"
+            );
+        } else {
+            throw new SecurityException("Unauthorized access.");
+        }
+    }
+
 }
