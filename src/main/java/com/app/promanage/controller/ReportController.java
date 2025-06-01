@@ -35,11 +35,6 @@ public class ReportController {
             @RequestParam String email
     ) {
         try {
-            // Append @gmail.com if not present
-            if (!email.contains("@")) {
-                email += "@gmail.com";
-            }
-
             byte[] reportPdf = reportService.generateProjectReport(projectId, type);
             emailService.sendEmailWithAttachment(
                     email,
