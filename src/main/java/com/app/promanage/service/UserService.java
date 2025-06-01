@@ -49,31 +49,43 @@ public class UserService implements UserDetailsService {
     }
 
     public UserSummaryDTO getUserSummary(UUID userId) {
-        // Projects where user is assignee or creator
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+
+        if (user.getRole().getLevel() == 1) { // ADMIN → Return all data
+            int totalProjects = (int) projectRepository.count();
+            int totalMilestones = (int) milestoneRepository.count();
+
+            List<Task> allTasks = taskRepository.findAll();
+            int totalTasks = allTasks.size();
+            int completedTasks = (int) allTasks.stream()
+                    .filter(task -> "3".equals(task.getStatus()))
+                    .count();
+
+            return new UserSummaryDTO(totalProjects, totalTasks, completedTasks, totalMilestones);
+        }
+
+        // For non-ADMIN users → return only their own/project-specific data
         List<Project> projects = projectRepository.findByAssignees_IdOrCreatedBy_Id(userId, userId);
         int totalProjects = projects.size();
 
-        // Tasks where user is assignee, reporter, or creator
         List<Task> tasks = taskRepository.findByAssignees_IdOrReporter_IdOrCreatedBy_Id(userId, userId, userId);
         int totalTasks = tasks.size();
-
         int completedTasks = (int) tasks.stream()
                 .filter(task -> "3".equals(task.getStatus()))
                 .count();
 
-        // Collect project IDs for milestone query
+        // Milestones created by the user or in the projects they are part of
         List<UUID> projectIds = projects.stream().map(Project::getId).toList();
-
-        // Milestones related to those projects
-        List<Milestone> milestonesInProjects = projectIds.isEmpty() ? List.of() : milestoneRepository.findByProject_IdIn(projectIds);
-
-        // Milestones created by user directly
+        List<Milestone> milestonesInProjects = projectIds.isEmpty()
+                ? List.of()
+                : milestoneRepository.findByProject_IdIn(projectIds);
         List<Milestone> milestonesCreatedByUser = milestoneRepository.findByCreatedBy_Id(userId);
 
-        // Combine milestones into a set to avoid duplicates
         Set<UUID> milestoneIds = new HashSet<>();
         milestonesInProjects.forEach(m -> milestoneIds.add(m.getId()));
         milestonesCreatedByUser.forEach(m -> milestoneIds.add(m.getId()));
+
         int totalMilestones = milestoneIds.size();
 
         return new UserSummaryDTO(totalProjects, totalTasks, completedTasks, totalMilestones);
