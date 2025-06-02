@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -204,4 +205,31 @@ public class TaskService {
         }
         throw new SecurityException("Unauthenticated access.");
     }
+
+    public List<Map<String, String>> getTaskDueDatesByUserId(UUID userId) {
+        Optional<User> optionalUser = userRepository.findById(userId);
+
+        User user = optionalUser.get();
+        List<Task> createdTasks = taskRepository.findAllByReporter(user);
+        List<Task> assignedTasks = taskRepository.findAllByAssigneesContains(user);
+
+        Set<Task> combinedTasks = new HashSet<>();
+        combinedTasks.addAll(createdTasks);
+        combinedTasks.addAll(assignedTasks);
+
+        List<Map<String, String>> dueDates = new ArrayList<>();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+
+        for (Task task : combinedTasks) {
+            if (task.getDueDate() != null) {
+                Map<String, String> entry = new HashMap<>();
+                entry.put("date", formatter.format(task.getDueDate()));
+                entry.put("name", task.getTitle());
+                dueDates.add(entry);
+            }
+        }
+
+        return dueDates;
+    }
+
 }

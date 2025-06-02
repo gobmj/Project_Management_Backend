@@ -79,4 +79,9 @@ public class TaskController {
             return ResponseEntity.status(500).body("An unexpected error occurred.");
         }
     }
+    @GetMapping("/{userId}/due-dates")
+    public ResponseEntity<List<Map<String, String>>> getTaskDueDatesByUserId(@PathVariable UUID userId) {
+        return ResponseEntity.ok(taskService.getTaskDueDatesByUserId(userId));
+    }
+
 }
