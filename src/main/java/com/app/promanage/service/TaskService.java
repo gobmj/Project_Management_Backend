@@ -206,30 +206,25 @@ public class TaskService {
         throw new SecurityException("Unauthenticated access.");
     }
 
-    public List<Map<String, String>> getTaskDueDatesByUserId(UUID userId) {
-        Optional<User> optionalUser = userRepository.findById(userId);
+    public List<Map<String, String>> getProjectEndDatesByUserId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
 
-        User user = optionalUser.get();
-        List<Task> createdTasks = taskRepository.findAllByReporter(user);
-        List<Task> assignedTasks = taskRepository.findAllByAssigneesContains(user);
+        List<Project> projects = projectRepository.findByAssignees_IdOrCreatedBy_Id(userId, userId);
 
-        Set<Task> combinedTasks = new HashSet<>();
-        combinedTasks.addAll(createdTasks);
-        combinedTasks.addAll(assignedTasks);
-
-        List<Map<String, String>> dueDates = new ArrayList<>();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        List<Map<String, String>> result = new ArrayList<>();
 
-        for (Task task : combinedTasks) {
-            if (task.getDueDate() != null) {
+        for (Project project : projects) {
+            if (project.getEndDate() != null) {
                 Map<String, String> entry = new HashMap<>();
-                entry.put("date", formatter.format(task.getDueDate()));
-                entry.put("name", task.getTitle());
-                dueDates.add(entry);
+                entry.put("date", formatter.format(project.getEndDate()));
+                entry.put("name", project.getName());
+                result.add(entry);
             }
         }
 
-        return dueDates;
+        return result;
     }
 
 }
