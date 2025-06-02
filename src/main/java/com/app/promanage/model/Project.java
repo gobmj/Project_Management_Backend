@@ -33,6 +33,8 @@ public class Project {
     @ManyToOne
     private User createdBy;
 
+    private String fileURL;
+
     @ManyToMany
     @JoinTable(
             name = "project_assignees",
